@@ -410,10 +410,13 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
         // Loop until we've read the required amount of data
         while data.count < length {
             // Use a timeout to avoid hanging forever if BLE connection is lost
-            // without didDisconnect being called (e.g. XPC connection interrupted)
-            let waitResult = ctx.semaphore.wait(timeout: .now() + 10)
+            // without didDisconnect being called (e.g. XPC connection interrupted).
+            // 60 s gives the user enough time to step through long multi-page
+            // confirmation prompts on the BitBox display without the SDK
+            // aborting the read mid-flow.
+            let waitResult = ctx.semaphore.wait(timeout: .now() + 60)
             if waitResult == .timedOut {
-                print("BLE: read timed out after 10s")
+                print("BLE: read timed out after 60s")
                 throw ReadError(message: "read timed out")
             }
 
