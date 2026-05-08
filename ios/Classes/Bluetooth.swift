@@ -612,7 +612,7 @@ class BluetoothReadWriteCloser: NSObject, ApiGoReadWriteCloserInterfaceProtocol 
         guard let data = data, let p = bluetoothManager.connectedPeripheral,
             let pWriter = bluetoothManager.pWriter
         else {
-            n!.pointee = 0
+            n?.pointee = 0
             return
         }
 
@@ -630,10 +630,9 @@ class BluetoothReadWriteCloser: NSObject, ApiGoReadWriteCloserInterfaceProtocol 
 
         let len = min(max_char_len, max_mtu_len, data.count)
 
-        bluetoothManager.connectedPeripheral!.writeValue(
-            data[..<len], for: pWriter, type: .withResponse)
-        n!.pointee = len
-        print("BLE: write data (\(len) bytes): \(data[..<8].hexEncodedString())...")
+        p.writeValue(data[..<len], for: pWriter, type: .withResponse)
+        n?.pointee = len
+        print("BLE: write data (\(len) bytes): \(data.prefix(min(8, data.count)).hexEncodedString())...")
     }
 }
 
