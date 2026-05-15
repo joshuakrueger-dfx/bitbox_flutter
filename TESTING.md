@@ -16,6 +16,28 @@ it can simulate pairing, channel hashes, confirmations, capabilities, ETH addres
 lookup, ETH signing, BTC xpubs, BTC message signing, device errors, and recovered
 panics without connecting hardware.
 
+## Reusable Flutter testkit
+
+Flutter apps can import the standalone Dart simulator:
+
+```dart
+import 'package:bitbox_flutter/testing.dart';
+
+final bitbox = installSimulatedBitboxPlatform(
+  channelHash: 'hash-shown-to-the-user',
+);
+```
+
+The simulator replaces `BitboxUsbPlatform.instance`, so app tests can exercise
+their real production BitboxManager flow without USB, BLE, or a physical
+BitBox. Save and restore the previous platform in `setUp`/`tearDown` when a test
+suite needs isolation.
+
+The Dart simulator is deliberately not RealUnit-specific. It covers device
+discovery, permission/open/close, pairing channel hashes, capability checks,
+BTC/ETH signing, custom per-method delays, custom per-method errors, custom
+method behavior, and a call log that tests can assert against.
+
 ## Official BitBox simulator
 
 `github.com/BitBoxSwiss/bitbox02-api-go` also ships official `TestSimulator*`
@@ -39,3 +61,5 @@ The tests explicitly guard against these hardware-wallet regressions:
 - iOS BLE read timeout regressing from 60 seconds to 10 seconds
 - Pairing/channel-hash behavior not being simulatable without hardware
 - ETH/BTC success, error, and panic flows not being simulatable without hardware
+- App-level Flutter flows not being testable with deterministic BitBox delays
+  and aborts
