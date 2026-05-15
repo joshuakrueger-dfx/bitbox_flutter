@@ -100,8 +100,6 @@ func (d deviceInfo) Open() (io.ReadWriteCloser, error) {
 	return readWriteCloser{device}, nil
 }
 
-var bitbox *firmware.Device
-
 //export GetDevice
 func GetDevice(device GoReadWriteCloserInterface) {
 	defer recoverPanic("GetDevice")

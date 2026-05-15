@@ -56,9 +56,6 @@ class BLEConnectionContext {
     let semaphore = DispatchSemaphore(value: 0)
     var readBuffer = Data()
     var readBufferLock = NSLock()
-    // Track received packets to detect and skip duplicates
-    // Key: packet data hash, Value: true if seen
-    var seenPackets: Set<Data> = []
 }
 
 class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheralDelegate {
@@ -108,7 +105,6 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
         if let ctx = currentContext {
             ctx.readBufferLock.lock()
             ctx.readBuffer.removeAll()
-            ctx.seenPackets.removeAll()
             // Drain semaphore to match the cleared buffer — prevents stale signals
             // from unblocking a future readBlocking() call with no data
             while ctx.semaphore.wait(timeout: .now()) == .success {}
@@ -333,22 +329,6 @@ class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CB
             }
 
             ctx.readBufferLock.lock()
-            // Drop BLE-layer retransmits (CoreBluetooth occasionally
-            // delivers an indication twice) so they don't corrupt the U2F
-            // HID stream and desync the noise nonce. The contains-check
-            // MUST run BEFORE the init-frame reset, otherwise retransmits
-            // of single-frame init messages slip through.
-            if ctx.seenPackets.contains(data) {
-                print("BLE: skipping duplicate packet: \(data.prefix(8).hexEncodedString())...")
-                ctx.readBufferLock.unlock()
-                return
-            }
-            let isInitFrame = data.count > 4 && (data[4] & 0x80) != 0
-            if isInitFrame {
-                ctx.seenPackets.removeAll()
-            }
-            ctx.seenPackets.insert(data)
-
             print("BLE: received data: \(data.hexEncodedString())")
             ctx.readBuffer.append(data)
             // Signal inside lock to keep buffer and semaphore count in sync
